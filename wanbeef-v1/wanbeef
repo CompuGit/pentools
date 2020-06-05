@@ -1,0 +1,153 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import time
+
+try:
+	from pyngrok import ngrok, exception
+
+except ImportError:
+
+	print("\n[!] Please install pyngrok module for Python3 \n\nUse command : python3 -m pip install pyngrok ")
+	sys.exit()
+
+
+def banner():
+	
+	os.system("clear")
+	print( """
++---------------------------------------------------+
+|  __          __     _   _ ____            ______  |
+|  \ \        / /\   | \ | |  _ \          |  ____| |
+|   \ \  /\  / /  \  |  \| | |_) | ___  ___| |__    |
+|    \ \/  \/ / /\ \ | . ` |  _ < / _ \/ _ \  __|   |
+|     \  /\  / ____ \| |\  | |_) |  __/  __/ |      |
+|      \/  \/_/    \_\_| \_|____/ \___|\___|_|      |
+|                                                   |
++---------------------------------------------------+
+version - 1.0 
+
+by Poorna Venkata Sai (CompuGit Admin)
+
+https://github.com/CompuGit/pentools""")
+
+
+def man(mode):
+	
+	print()
+
+	if mode == "help":
+		print(format(f" {mode.upper()} ","=^53"))
+
+		print('''
+wanbeef ngrok	-> This provide you two different kinds of tunnels 
+		   from ngrok.io server.
+	
+	Ex:-	1. http://abc.ngrok.io/		for web on port 80
+		2. http://def.ngrok.io/		for beef on port 3000
+
+
+wanbeef serveo	-> This provide you two tunnels from serveo.net server.
+
+	Ex:-	1. https://abcde.serveo.net/    for web on port 80
+		2. serveo.net:3000		for beef on port 3000 
+		  * must be accessed as https://abcde.serveo.net:3000/
+
+
+wanbeef help	-> To show this usage options
+''')
+
+		print(format(f"","=^53"))
+
+
+def tunnel_ngrok(http_port, tcp_port):
+	
+	try:
+		host_addr = ngrok.connect(http_port)
+		beef_addr = ngrok.connect(tcp_port,'http')
+
+		print(f"Forwarding HTTP traffic from {host_addr}")
+		print(f"Forwarding TCP connections from {beef_addr}")
+
+		try:
+			time.sleep(100000000)
+
+		except KeyboardInterrupt:
+			print(f"\n\nConnection to {host_addr} closed.")
+			print(f"Connection to {beef_addr} closed.")
+			ngrok.kill()
+
+			services('stop')
+	
+	except KeyboardInterrupt:
+		print("\n[!] WanBeef Stoped by User.")
+		
+		services('stop')
+	
+	except exception.PyngrokNgrokError:
+		print("\n[!] Error in connecting with Ngrok Server. Please check your WAN Connection.")
+
+		services('stop')
+
+
+def tunnel_serveo(http_port, tcp_port):
+
+	try:
+		os.system(f"ssh -R {http_port}:localhost:{http_port} -R {tcp_port}:localhost:{tcp_port} serveo.net")
+		return False
+
+	except KeyboardInterrupt:
+		print("\n[!] WanBeef Stoped by User.")
+
+
+def services(work):
+
+	
+	os.system(f"service apache2 {work}")
+	print(f'\n[*] Apache Web Service {work}ed on port 80.')
+
+	os.system(f"service beef-xss {work}")
+	print(f'[*] Beef Service {work}ed on port 3000.')
+
+	print()
+
+
+def main():
+		
+	try:
+		mode = sys.argv[1].lower()
+
+		if len(sys.argv)>2:
+			print("\n[!] only the first argument after command \"wanbeef\" is considered.")
+
+	except IndexError:
+		print("\n[!] Server-Type as Argument is Missing.\n\nTry Command : wanbeef help	-> To get usage options.\n")
+		sys.exit()
+		
+	if mode == "ngrok":
+
+		services('start')
+
+		#man(mode)
+		tunnel_ngrok(80, 3000)
+
+	elif mode == "serveo":
+
+		services('start')
+
+		#man(mode)
+		if not tunnel_serveo(80, 3000):
+			services('stop')
+
+	elif mode == "help":
+		man("help")
+	
+	else:
+		print("\n[!] invalid Argument.\n\nTry Command : wanbeef help	-> To get usage options.\n")
+
+
+if __name__ == '__main__':
+	banner()
+	main()
+
